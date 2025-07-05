@@ -6,7 +6,9 @@ from sqlalchemy import desc, asc
 from Config.database_config import db
 from Datastore.models.task_model import Task
 from Datastore.models.user_model import User
+from Datastore.models.tag_model import Tag
 from Exceptions.custom_exception import CustomException
+from Service.ai_service import AIService
 
 class TaskService:
     """
@@ -16,7 +18,7 @@ class TaskService:
     @staticmethod
     def create_task(title, deadline, user_id, description=None):
         """
-        Create a new task
+        Create a new task with AI-generated priority
         
         Args:
             title (str): Task title
@@ -56,22 +58,61 @@ class TaskService:
                 logging.error(f"Task creation failed: Invalid deadline format - {deadline}")
                 raise CustomException.validation_error("Invalid deadline format. Use ISO format (YYYY-MM-DDTHH:MM:SS)")
             
-            # Create new task
+            # Analyze task priority using AI
+            try:
+                ai_service = AIService()
+                priority = ai_service.analyze_task_priority(
+                    title=title,
+                    description=description or "",
+                    occupation=user.occupation
+                )
+                logging.info(f"AI analyzed priority for task '{title}': {priority}")
+            except Exception as e:
+                logging.warning(f"AI priority analysis failed: {str(e)}. Using default priority.")
+                priority = 'Medium'  # Fallback to default priority
+            
+            # Analyze task tags using AI
+            try:
+                ai_service = ai_service if 'ai_service' in locals() else AIService()
+                tag_names = ai_service.analyze_task_tags(
+                    title=title,
+                    description=description or ""
+                )
+                logging.info(f"AI analyzed tags for task '{title}': {tag_names}")
+            except Exception as e:
+                logging.warning(f"AI tag analysis failed: {str(e)}. Using default tags.")
+                tag_names = ['Work']  # Fallback to default tags
+            
+            # Create new task with AI-generated priority
             new_task = Task(
                 title=title,
                 deadline=deadline_dt,
                 user_id=user_uuid,
-                description=description
+                description=description,
+                priority=priority
             )
             
             # Validate task data
             new_task.validate()
             
-            # Save to database
+            # Save task to database first
             db.session.add(new_task)
+            db.session.flush()  # Get task ID without committing
+            
+            # Create and associate tags
+            try:
+                for tag_name in tag_names:
+                    tag = Tag.get_or_create(tag_name)
+                    new_task.tags.append(tag)
+                
+                logging.info(f"Associated {len(tag_names)} tags with task: {tag_names}")
+            except Exception as e:
+                logging.warning(f"Failed to create tags: {str(e)}. Task will be created without tags.")
+            
+            # Commit all changes
             db.session.commit()
             
-            logging.info(f"Task created successfully: {new_task.id} - {title}")
+            logging.info(f"Task created successfully: {new_task.id} - {title} with priority: {priority}")
             return {
                 "success": True,
                 "message": "Task created successfully",
@@ -131,14 +172,16 @@ class TaskService:
             raise CustomException.service_error("Failed to fetch task")
     
     @staticmethod
-    def get_user_tasks(user_id, status=None, sort_by='deadline', sort_order='asc'):
+    def get_user_tasks(user_id, status=None, priority=None, tag=None, sort_by='deadline', sort_order='asc'):
         """
         Get all tasks for a user with optional filtering and sorting
         
         Args:
             user_id (str): User UUID as string
             status (str): Optional status filter (upcoming, completed, missed)
-            sort_by (str): Sort field (deadline, created_at, title)
+            priority (str): Optional priority filter (Low, Medium, High, Critical)
+            tag (str): Optional tag filter (tag name)
+            sort_by (str): Sort field (deadline, created_at, title, priority)
             sort_order (str): Sort order (asc, desc)
             
         Returns:
@@ -148,7 +191,7 @@ class TaskService:
             CustomException: If fetching fails
         """
         try:
-            logging.info(f"Fetching tasks for user: {user_id}, status: {status}, sort: {sort_by} {sort_order}")
+            logging.info(f"Fetching tasks for user: {user_id}, status: {status}, priority: {priority}, tag: {tag}, sort: {sort_by} {sort_order}")
             
             if not user_id:
                 logging.error("Get tasks failed: User ID is required")
@@ -170,6 +213,19 @@ class TaskService:
             # Base query
             query = Task.query.filter_by(user_id=user_uuid)
             
+            # Apply priority filter if specified
+            if priority:
+                if priority not in Task.PRIORITY_CHOICES:
+                    logging.error(f"Invalid priority filter: {priority}")
+                    raise CustomException.validation_error(f"Priority must be one of {Task.PRIORITY_CHOICES}")
+                query = query.filter_by(priority=priority)
+            
+            # Apply tag filter if specified
+            if tag:
+                # Join with tags table to filter by tag name
+                query = query.join(Task.tags).filter(Tag.name == tag)
+                logging.info(f"Filtering tasks by tag: {tag}")
+            
             # Apply sorting
             if sort_by == 'deadline':
                 if sort_order.lower() == 'desc':
@@ -186,6 +242,15 @@ class TaskService:
                     query = query.order_by(desc(Task.title))
                 else:
                     query = query.order_by(asc(Task.title))
+            elif sort_by == 'priority':
+                # Custom priority sorting: Critical > High > Medium > Low
+                priority_order = {'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1}
+                if sort_order.lower() == 'desc':
+                    # High priority first (Critical -> High -> Medium -> Low)
+                    query = query.order_by(desc(Task.priority))
+                else:
+                    # Low priority first (Low -> Medium -> High -> Critical)
+                    query = query.order_by(asc(Task.priority))
             else:
                 # Default sort by deadline ascending
                 query = query.order_by(asc(Task.deadline))
