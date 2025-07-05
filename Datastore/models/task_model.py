@@ -12,6 +12,9 @@ class Task(db.Model):
     """
     __tablename__ = 'tasks'
     
+    # Priority choices
+    PRIORITY_CHOICES = ['Low', 'Medium', 'High', 'Critical']
+    
     # Primary key
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
@@ -20,6 +23,7 @@ class Task(db.Model):
     description = Column(Text, nullable=True)
     deadline = Column(DateTime, nullable=False)
     completed = Column(Boolean, default=False, nullable=False)
+    priority = Column(String(20), default='Medium', nullable=False)  # AI-generated priority
     
     # Foreign key to user
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
@@ -28,13 +32,14 @@ class Task(db.Model):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
-    def __init__(self, title, deadline, user_id, description=None, completed=False):
+    def __init__(self, title, deadline, user_id, description=None, completed=False, priority='Medium'):
         self.title = title
         self.description = description
         self.deadline = deadline
         self.completed = completed
+        self.priority = priority
         self.user_id = user_id
-        logging.info(f"Creating new task: {title} for user_id: {user_id}")
+        logging.info(f"Creating new task: {title} for user_id: {user_id} with priority: {priority}")
     
     def validate_title(self):
         """
@@ -105,6 +110,25 @@ class Task(db.Model):
             logging.error(f"Unexpected error during deadline validation: {str(e)}")
             raise CustomException.validation_error("Invalid task deadline")
     
+    def validate_priority(self):
+        """
+        Validate task priority
+        """
+        try:
+            priority = self.priority
+            if priority not in self.PRIORITY_CHOICES:
+                logging.error(f"Task priority validation failed: Invalid priority - {priority}")
+                raise CustomException.validation_error(f"Priority must be one of {self.PRIORITY_CHOICES}")
+            
+            logging.debug(f"Task priority validation successful: {priority}")
+            return True
+            
+        except CustomException:
+            raise
+        except Exception as e:
+            logging.error(f"Unexpected error during priority validation: {str(e)}")
+            raise CustomException.validation_error("Invalid task priority")
+    
     def validate_user_id(self):
         """
         Validate user_id
@@ -134,6 +158,7 @@ class Task(db.Model):
             self.validate_title()
             self.validate_description()
             self.validate_deadline()
+            self.validate_priority()
             self.validate_user_id()
             
             logging.info(f"Task validation successful: {self.title}")
@@ -207,6 +232,7 @@ class Task(db.Model):
             'description': self.description,
             'deadline': self.deadline.isoformat() if self.deadline else None,
             'completed': self.completed,
+            'priority': self.priority,
             'status': self.get_status(),
             'is_past_deadline': self.is_past_deadline(),
             'user_id': str(self.user_id),  # Convert UUID to string for JSON serialization
@@ -215,4 +241,4 @@ class Task(db.Model):
         }
     
     def __repr__(self):
-        return f'<Task {self.title} - {self.get_status()}>' 
+        return f'<Task {self.title} - {self.get_status()} - Priority: {self.priority}>' 

@@ -91,6 +91,7 @@ def get_user_id_from_request():
                             'description': {'type': 'string', 'example': 'Write comprehensive API documentation'},
                             'deadline': {'type': 'string', 'format': 'date-time'},
                             'completed': {'type': 'boolean', 'example': False},
+                            'priority': {'type': 'string', 'example': 'High', 'enum': ['Low', 'Medium', 'High', 'Critical']},
                             'status': {'type': 'string', 'example': 'upcoming'},
                             'is_past_deadline': {'type': 'boolean', 'example': False},
                             'user_id': {'type': 'string', 'example': 'uuid'},
@@ -181,10 +182,17 @@ def create_task():
             'description': 'Filter tasks by status'
         },
         {
+            'name': 'priority',
+            'in': 'query',
+            'type': 'string',
+            'enum': ['Low', 'Medium', 'High', 'Critical'],
+            'description': 'Filter tasks by priority'
+        },
+        {
             'name': 'sort_by',
             'in': 'query',
             'type': 'string',
-            'enum': ['deadline', 'created_at', 'title'],
+            'enum': ['deadline', 'created_at', 'title', 'priority'],
             'default': 'deadline',
             'description': 'Sort tasks by field'
         },
@@ -214,6 +222,7 @@ def create_task():
                                 'description': {'type': 'string', 'example': 'Write comprehensive API documentation'},
                                 'deadline': {'type': 'string', 'format': 'date-time'},
                                 'completed': {'type': 'boolean', 'example': False},
+                                'priority': {'type': 'string', 'example': 'High', 'enum': ['Low', 'Medium', 'High', 'Critical']},
                                 'status': {'type': 'string', 'example': 'upcoming'},
                                 'is_past_deadline': {'type': 'boolean', 'example': False},
                                 'user_id': {'type': 'string', 'example': 'uuid'},
@@ -261,11 +270,12 @@ def get_tasks():
         
         # Get query parameters
         status = request.args.get('status')
+        priority = request.args.get('priority')
         sort_by = request.args.get('sort_by', 'deadline')
         sort_order = request.args.get('sort_order', 'asc')
         
         # Get tasks
-        result = TaskService.get_user_tasks(user_id, status, sort_by, sort_order)
+        result = TaskService.get_user_tasks(user_id, status, priority, sort_by, sort_order)
         
         return jsonify(result), 200
         
@@ -307,6 +317,7 @@ def get_tasks():
                     'description': {'type': 'string', 'example': 'Write comprehensive API documentation'},
                     'deadline': {'type': 'string', 'format': 'date-time'},
                     'completed': {'type': 'boolean', 'example': False},
+                    'priority': {'type': 'string', 'example': 'High', 'enum': ['Low', 'Medium', 'High', 'Critical']},
                     'status': {'type': 'string', 'example': 'upcoming'},
                     'is_past_deadline': {'type': 'boolean', 'example': False},
                     'user_id': {'type': 'string', 'example': 'uuid'},
@@ -426,6 +437,7 @@ def get_task(task_id):
                             'description': {'type': 'string', 'example': 'Updated task description'},
                             'deadline': {'type': 'string', 'format': 'date-time'},
                             'completed': {'type': 'boolean', 'example': True},
+                            'priority': {'type': 'string', 'example': 'High', 'enum': ['Low', 'Medium', 'High', 'Critical']},
                             'status': {'type': 'string', 'example': 'completed'},
                             'is_past_deadline': {'type': 'boolean', 'example': False},
                             'user_id': {'type': 'string', 'example': 'uuid'},
@@ -533,6 +545,7 @@ def update_task(task_id):
                             'description': {'type': 'string', 'example': 'Write comprehensive API documentation'},
                             'deadline': {'type': 'string', 'format': 'date-time'},
                             'completed': {'type': 'boolean', 'example': True},
+                            'priority': {'type': 'string', 'example': 'High', 'enum': ['Low', 'Medium', 'High', 'Critical']},
                             'status': {'type': 'string', 'example': 'completed'},
                             'is_past_deadline': {'type': 'boolean', 'example': False},
                             'user_id': {'type': 'string', 'example': 'uuid'},

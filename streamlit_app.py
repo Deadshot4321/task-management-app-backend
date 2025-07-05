@@ -107,6 +107,57 @@ st.markdown("""
         gap: 0.5rem;
     }
     
+    .priority-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+        border: 1px solid;
+    }
+    
+    .priority-critical {
+        background: linear-gradient(135deg, rgba(248, 81, 73, 0.2), rgba(248, 81, 73, 0.1));
+        color: #f85149;
+        border-color: #f85149;
+    }
+    
+    .priority-high {
+        background: linear-gradient(135deg, rgba(255, 165, 0, 0.2), rgba(255, 165, 0, 0.1));
+        color: #ffa500;
+        border-color: #ffa500;
+    }
+    
+    .priority-medium {
+        background: linear-gradient(135deg, rgba(247, 204, 2, 0.2), rgba(247, 204, 2, 0.1));
+        color: #f7cc02;
+        border-color: #f7cc02;
+    }
+    
+    .priority-low {
+        background: linear-gradient(135deg, rgba(63, 185, 80, 0.2), rgba(63, 185, 80, 0.1));
+        color: #3fb950;
+        border-color: #3fb950;
+    }
+    
+    .sort-controls {
+        background: linear-gradient(135deg, #161b22, #21262d);
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
     .stats-card {
         background: linear-gradient(135deg, #161b22, #21262d);
         border: 1px solid #30363d;
@@ -314,11 +365,22 @@ def create_task(title, description, deadline):
                               "deadline": deadline
                           })
 
-def get_tasks(status=None):
-    """Get user tasks with optional status filter"""
+def get_tasks(status=None, priority=None, sort_by='deadline', sort_order='asc'):
+    """Get user tasks with optional filters and sorting"""
     endpoint = "/get/tasks"
+    params = []
+    
     if status:
-        endpoint += f"?status={status}"
+        params.append(f"status={status}")
+    if priority:
+        params.append(f"priority={priority}")
+    if sort_by:
+        params.append(f"sort_by={sort_by}")
+    if sort_order:
+        params.append(f"sort_order={sort_order}")
+    
+    if params:
+        endpoint += "?" + "&".join(params)
     
     response = make_api_request("GET", endpoint, headers=get_user_headers())
     if response["success"]:
@@ -610,9 +672,71 @@ def show_task_manager():
     # Main content area - Task Buckets
     st.markdown("### 🎯 Task Dashboard")
     
-    # Get all tasks
+    # Sorting and Filtering Controls
+    st.markdown('<div class="sort-controls">', unsafe_allow_html=True)
+    st.markdown("#### 🔧 Sort & Filter Options")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        sort_by = st.selectbox(
+            "📊 Sort by",
+            options=["deadline", "priority", "created_at", "title"],
+            index=0,
+            format_func=lambda x: {
+                "deadline": "📅 Deadline",
+                "priority": "🎯 Priority",
+                "created_at": "📝 Created Date",
+                "title": "🔤 Title"
+            }[x]
+        )
+    
+    with col2:
+        sort_order = st.selectbox(
+            "📈 Sort order",
+            options=["asc", "desc"],
+            index=0,
+            format_func=lambda x: {
+                "asc": "⬆️ Ascending",
+                "desc": "⬇️ Descending"
+            }[x]
+        )
+    
+    with col3:
+        filter_priority = st.selectbox(
+            "🎯 Filter by Priority",
+            options=[None, "Critical", "High", "Medium", "Low"],
+            index=0,
+            format_func=lambda x: "🔍 All Priorities" if x is None else {
+                "Critical": "🔴 Critical",
+                "High": "🟠 High", 
+                "Medium": "🟡 Medium",
+                "Low": "🟢 Low"
+            }[x]
+        )
+    
+    with col4:
+        filter_status = st.selectbox(
+            "📋 Filter by Status",
+            options=[None, "upcoming", "completed", "missed"],
+            index=0,
+            format_func=lambda x: "📝 All Status" if x is None else {
+                "upcoming": "🟡 Upcoming",
+                "completed": "🟢 Completed",
+                "missed": "🔴 Missed"
+            }[x]
+        )
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Get all tasks with filters and sorting
     with st.spinner("Loading tasks..."):
-        all_tasks = get_tasks()
+        all_tasks = get_tasks(
+            status=filter_status,
+            priority=filter_priority,
+            sort_by=sort_by or "deadline",
+            sort_order=sort_order or "asc"
+        )
     
     if not all_tasks:
         st.markdown("""
@@ -630,10 +754,10 @@ def show_task_manager():
         """, unsafe_allow_html=True)
         return
     
-    # Separate tasks by status
-    upcoming_tasks = [t for t in all_tasks if t['status'] == 'upcoming']
-    completed_tasks = [t for t in all_tasks if t['status'] == 'completed']
-    missed_tasks = [t for t in all_tasks if t['status'] == 'missed']
+    # Get task counts for all statuses (for metrics)
+    total_upcoming = len([t for t in all_tasks if t['status'] == 'upcoming'])
+    total_completed = len([t for t in all_tasks if t['status'] == 'completed'])
+    total_missed = len([t for t in all_tasks if t['status'] == 'missed'])
     
     # Statistics row
     col1, col2, col3, col4 = st.columns(4)
@@ -641,49 +765,77 @@ def show_task_manager():
     with col1:
         st.metric("📝 Total Tasks", len(all_tasks))
     with col2:
-        st.metric("🟡 Upcoming", len(upcoming_tasks))
+        st.metric("🟡 Upcoming", total_upcoming)
     with col3:
-        st.metric("🟢 Completed", len(completed_tasks))
+        st.metric("🟢 Completed", total_completed)
     with col4:
-        st.metric("🔴 Missed", len(missed_tasks))
+        st.metric("🔴 Missed", total_missed)
     
     st.markdown("---")
     
-    # Task Buckets
-    col1, col2, col3 = st.columns(3)
-    
-    # Upcoming Tasks
-    with col1:
-        st.markdown('<div class="bucket-header upcoming-bucket">🟡 Upcoming Tasks</div>', unsafe_allow_html=True)
+    # Check if status filter is applied
+    if filter_status:
+        # Show filtered tasks in a single view
+        st.markdown(f'<div class="bucket-header upcoming-bucket">📋 Filtered Tasks ({filter_status.title()})</div>', unsafe_allow_html=True)
         
-        if upcoming_tasks:
-            for task in upcoming_tasks:
-                render_task_card(task, "upcoming")
+        if all_tasks:
+            for task in all_tasks:
+                render_task_card(task, task['status'])
         else:
-            st.info("No upcoming tasks! 🎉")
-    
-    # Completed Tasks
-    with col2:
-        st.markdown('<div class="bucket-header completed-bucket">🟢 Completed Tasks</div>', unsafe_allow_html=True)
+            st.info(f"No {filter_status} tasks found with current filters")
+    else:
+        # Show traditional three-column bucket view
+        # Separate tasks by status
+        upcoming_tasks = [t for t in all_tasks if t['status'] == 'upcoming']
+        completed_tasks = [t for t in all_tasks if t['status'] == 'completed']
+        missed_tasks = [t for t in all_tasks if t['status'] == 'missed']
         
-        if completed_tasks:
-            for task in completed_tasks:
-                render_task_card(task, "completed")
-        else:
-            st.info("No completed tasks yet")
-    
-    # Missed Tasks
-    with col3:
-        st.markdown('<div class="bucket-header missed-bucket">🔴 Missed Tasks</div>', unsafe_allow_html=True)
+        # Task Buckets
+        col1, col2, col3 = st.columns(3)
         
-        if missed_tasks:
-            for task in missed_tasks:
-                render_task_card(task, "missed")
-        else:
-            st.info("No missed tasks! 🎉")
+        # Upcoming Tasks
+        with col1:
+            st.markdown('<div class="bucket-header upcoming-bucket">🟡 Upcoming Tasks</div>', unsafe_allow_html=True)
+            
+            if upcoming_tasks:
+                for task in upcoming_tasks:
+                    render_task_card(task, "upcoming")
+            else:
+                st.info("No upcoming tasks! 🎉")
+        
+        # Completed Tasks
+        with col2:
+            st.markdown('<div class="bucket-header completed-bucket">🟢 Completed Tasks</div>', unsafe_allow_html=True)
+            
+            if completed_tasks:
+                for task in completed_tasks:
+                    render_task_card(task, "completed")
+            else:
+                st.info("No completed tasks yet")
+        
+        # Missed Tasks
+        with col3:
+            st.markdown('<div class="bucket-header missed-bucket">🔴 Missed Tasks</div>', unsafe_allow_html=True)
+            
+            if missed_tasks:
+                for task in missed_tasks:
+                    render_task_card(task, "missed")
+            else:
+                st.info("No missed tasks! 🎉")
 
 def render_task_card(task, status):
-    """Render enhanced task card"""
+    """Render enhanced task card with AI priority"""
+    # Get priority and format it
+    priority = task.get('priority', 'Medium')
+    priority_class = f"priority-{priority.lower()}"
+    priority_icons = {
+        'Critical': '🔴',
+        'High': '🟠', 
+        'Medium': '🟡',
+        'Low': '🟢'
+    }
+    priority_icon = priority_icons.get(priority, '🟡')
+    
     # Format deadline
     try:
         deadline_dt = datetime.fromisoformat(task['deadline'].replace('Z', '+00:00'))
@@ -703,9 +855,10 @@ def render_task_card(task, status):
         deadline_info = f"📅 {task['deadline']}"
         deadline_color = "#a5a5a5"
     
-    # Task card HTML
+    # Task card HTML with priority badge
     card_html = f"""
     <div class="task-card">
+        <div class="priority-badge {priority_class}">{priority_icon} {priority} Priority</div>
         <div class="task-title">{task['title']}</div>
         <div class="task-description">{task.get('description', 'No description provided')}</div>
         <div class="task-deadline" style="color: {deadline_color};">{deadline_info}</div>
