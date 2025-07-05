@@ -1,72 +1,30 @@
-# Task Management API Backend
+# The Engine for a Time-Aware Task API
 
-A comprehensive task management system API built with Flask, featuring time-aware auto-bucketing and user authentication.
+A powerful, production-grade REST API that serves as the backend for an intelligent task management application. This system provides comprehensive task management with time-aware auto-bucketing and advanced AI-powered features that make task organization smarter and more efficient.
 
 ## 🎯 Project Overview
 
-This is a production-grade REST API that serves as the backend for a task management application. The system provides:
+This is a robust, scalable backend service built with Flask that acts as the "single source of truth" for task management applications. The system automatically categorizes tasks based on their deadlines and leverages AI to provide intelligent insights and automation.
 
-- **User Authentication**: Simple registration and OTP-based login
-- **Task Management**: Full CRUD operations for tasks
-- **Time-Aware Auto-Bucketing**: Automatic categorization based on deadlines
-- **Smart Status Tracking**: Dynamic status computation (upcoming/completed/missed)
+### Key Features
 
-## ✨ Features
-
-### User Management
-- User registration with profession selection
-- OTP-based login (MVP uses default OTP: 1234)
-- 10-digit mobile number validation
-- Top 30 profession choices
-
-### Task Management
-- Create, read, update, delete tasks
-- Dynamic status computation
-- Past deadline tracking
-- User-specific task filtering
-- Sorting and filtering capabilities
-- Task statistics
-
-### Technical Features
-- **Production-grade architecture** with proper separation of concerns
-- **Comprehensive logging** with request context and colors
-- **Custom exception handling** with standardized error responses
-- **Swagger documentation** for all API endpoints
-- **Database migrations** support
-- **CORS** enabled for frontend integration
-
-## 🏗️ Architecture
-
-```
-task-management-app-backend/
-├── Config/                 # Configuration modules
-│   ├── database_config.py  # SQLAlchemy database setup
-│   ├── logging_config.py   # Comprehensive logging configuration
-│   ├── swagger_config.py   # API documentation setup
-│   └── exception_config.py # Global exception handlers
-├── Controller/             # API route controllers
-│   ├── auth_controller.py  # Authentication endpoints
-│   └── task_controller.py  # Task management endpoints
-├── Service/               # Business logic layer
-│   ├── auth_service.py    # Authentication business logic
-│   └── task_service.py    # Task management business logic
-├── Datastore/            # Database models
-│   └── models/
-│       ├── user_model.py  # User database model
-│       └── task_model.py  # Task database model
-├── Exceptions/           # Custom exception classes
-│   └── custom_exception.py
-├── Utils/               # Utility functions
-│   └── database_setup.py # Database initialization
-└── main.py             # Application entry point
-```
+- **🔐 User Authentication**: Simple registration and OTP-based login system
+- **📋 Task Management**: Full CRUD operations with intelligent status tracking
+- **⏰ Time-Aware Auto-Bucketing**: Automatic task categorization based on deadlines
+- **🤖 AI-Powered Intelligence**: Advanced AI features for priority analysis and smart tagging
+- **🏗️ Production Architecture**: Scalable design with proper separation of concerns
+- **📊 Comprehensive Logging**: Request tracking with colored output and context
+- **🔧 Custom Exception Handling**: Standardized error responses
+- **📚 API Documentation**: Complete Swagger documentation
+- **🌐 CORS Support**: Ready for frontend integration
+- **🖥️ Streamlit UI**: Beautiful dark-themed UI for complete user experience
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8+
 - PostgreSQL 12+
-- pip
+- Groq API Key (for AI features)
 
 ### 1. Clone & Setup
 ```bash
@@ -79,22 +37,18 @@ cd task-management-app-backend
 pip install -r requirements.txt
 ```
 
-### 3. Database Configuration
-1. Create PostgreSQL database:
-```sql
-CREATE DATABASE task_management_db;
-```
+### 3. Environment Configuration
+Create a configuration file `Task_Management.cfg` with the following settings:
 
-2. Set environment variable or update the configuration:
-```bash
-export TASK_MANAGEMENT=/path/to/your/config.cfg
-```
-
-Your `Task_Management.cfg` should contain:
 ```ini
 # Database Configuration
 SQLALCHEMY_DATABASE_URI = postgresql://postgres:your_password@localhost:5432/task_management_db
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+# AI Configuration
+GROQ_API_KEY = your_groq_api_key
+GROQ_MODEL = llama-3.3-70b-versatile
+AI_ENABLED = true
 
 # API Configuration
 API_TITLE = Task Management API
@@ -109,7 +63,18 @@ LOG_COLORS = True
 LOG_FILE_PATH = logs/app.log
 ```
 
-### 4. Run the Application
+### 4. Database Setup
+Create PostgreSQL database:
+```sql
+CREATE DATABASE task_management_db;
+```
+
+Set environment variable:
+```bash
+export TASK_MANAGEMENT=/path/to/your/Task_Management.cfg
+```
+
+### 5. Run the Application
 ```bash
 python main.py
 ```
@@ -118,389 +83,373 @@ The API will be available at: `http://localhost:5005`
 
 **Note:** Database tables will be created automatically on first run.
 
-## 🎨 Streamlit UI (Complete Solution)
+## 🎨 Complete UI Experience
 
-This project now includes a **beautiful dark-themed Streamlit UI** that provides a complete frontend for your task management system!
+### Streamlit Dashboard
+This project includes a beautiful, modern Streamlit UI with:
+- **🌙 Dark Theme**: Eye-friendly interface
+- **📱 Responsive Design**: Works on all devices
+- **🔄 Real-time Updates**: Auto-refresh capabilities
+- **📊 Visual Task Buckets**: Clear separation of task states
+- **📈 Live Statistics**: Task completion metrics
+- **✨ Intuitive CRUD**: Easy task management
 
-### 🚀 Quick Demo Setup
-```bash
-# One-click setup with UI
-./run_demo.sh
-```
-
-This script will:
-1. Install all dependencies (Flask + Streamlit)
-2. Start the Flask backend
-3. Optionally create sample data
-4. Launch the Streamlit UI in your browser
-
-### 🌟 UI Features
-- **🌙 Dark Theme**: Modern, eye-friendly dark interface
-- **📱 Mobile Responsive**: Works perfectly on desktop and mobile
-- **🔄 Real-time Updates**: Auto-refresh every 30 seconds
-- **📊 Task Buckets**: Visual separation of Upcoming, Completed, and Missed tasks
-- **📈 Live Statistics**: Task completion rates and counts
-- **✨ Intuitive CRUD**: Create, edit, complete, and delete tasks
-- **🎯 Smart Authentication**: Login/register with profession selection
-- **⚡ Instant Feedback**: Loading states and success/error messages
-
-### 🎛️ Manual UI Setup
-If you prefer manual setup:
-
+### Quick Demo Setup
 ```bash
 # Install Streamlit dependencies
-pip install -r requirements_streamlit.txt
+pip install streamlit plotly
 
 # Terminal 1: Start Flask backend
 python main.py
 
-# Terminal 2: Create demo data (optional)
-python demo_data.py
-
-# Terminal 3: Launch Streamlit UI
+# Terminal 2: Launch Streamlit UI
 streamlit run streamlit_app.py
 ```
 
-### 📱 Using the UI
+## 🏗️ System Architecture
 
-1. **Authentication**
-   - Register new users with profession selection
-   - Login with mobile number (OTP: 1234)
-   - Automatic session management
-
-2. **Task Management**
-   - Create tasks using sidebar form
-   - View tasks in three buckets (Upcoming/Completed/Missed)
-   - Edit tasks with inline forms
-   - Mark tasks as complete with one click
-   - Delete tasks with confirmation
-
-3. **Dashboard Features**
-   - Real-time task statistics
-   - Auto-refresh toggle
-   - Visual deadline indicators
-   - Responsive design
-
-### 🎯 Demo Data
-The `demo_data.py` script creates realistic sample data:
-- **3 Demo Users**: Alice (Software Engineer), Bob (Product Manager), Carol (Data Scientist)
-- **10 Sample Tasks per User**: Mix of upcoming, completed, and missed tasks
-- **Login Credentials**: Use mobile numbers 1234567890, 2345678901, 3456789012
-
-### 📊 Auto-Bucketing in Action
-The UI showcases your intelligent auto-bucketing system:
-- **🟡 Upcoming**: Future deadlines, not completed
-- **🟢 Completed**: Manually marked as done
-- **🔴 Missed**: Past deadlines, not completed
-
-Tasks automatically move between buckets as time passes!
-
-### 🔧 UI Configuration
-- **API URL**: Edit line 99 in `streamlit_app.py`
-- **Refresh Rate**: Modify auto-refresh interval (default: 30s)
-- **Theme**: Customize CSS colors and styling
-- **Mobile**: Responsive design works on all screen sizes
-
-### 🎨 UI Architecture
 ```
-streamlit_app.py          # Main UI application
-├── Authentication Pages  # Login/Register tabs
-├── Task Management UI    # Three-column bucket layout
-├── Sidebar Tools         # Task creation form + statistics
-├── API Integration       # Full backend communication
-└── Dark Theme Styling    # Custom CSS for modern look
+task-management-app-backend/
+├── AI/                     # AI Integration Layer
+│   ├── groq_client.py      # Groq API client
+│   └── prompts.py          # AI prompt templates
+├── Config/                 # Configuration modules
+│   ├── database_config.py  # SQLAlchemy setup
+│   ├── logging_config.py   # Comprehensive logging
+│   ├── swagger_config.py   # API documentation
+│   └── exception_config.py # Global exception handlers
+├── Controller/             # API route controllers
+│   ├── auth_controller.py  # Authentication endpoints
+│   └── task_controller.py  # Task management endpoints
+├── Service/               # Business logic layer
+│   ├── ai_service.py      # AI feature coordination
+│   ├── auth_service.py    # Authentication logic
+│   └── task_service.py    # Task management logic
+├── Datastore/            # Database models
+│   └── models/
+│       ├── user_model.py  # User model
+│       ├── task_model.py  # Task model with AI features
+│       └── tag_model.py   # Tag model for AI tagging
+├── Exceptions/           # Custom exception classes
+│   └── custom_exception.py
+├── Utils/               # Utility functions
+└── main.py             # Application entry point
 ```
 
-### 🚀 Production Considerations
-- **Environment Variables**: Configure API URL
-- **HTTPS**: Secure connections for production
-- **Performance**: Optimize refresh rates for scale
-- **Monitoring**: Add error tracking and analytics
-- **Mobile App**: Foundation for React Native/Flutter
+## 🧠 AI Innovation Feature
 
-**🎉 The Streamlit UI transforms your robust Flask backend into a complete, production-ready task management solution!**
+### Overview
+We have implemented two cutting-edge AI features that significantly enhance the task management experience by providing intelligent automation and insights. These features leverage the power of Groq's API with the LLaMA model to analyze task content and provide smart recommendations.
 
-## 📚 API Documentation
+### Why We Chose Groq
+- **Generous Free Limits**: Allows extensive usage without cost concerns
+- **LLaMA Model Performance**: Provides excellent output quality for our specific use cases
+- **Low Latency**: Fast response times for real-time task processing
+- **Reliability**: Consistent performance for production environments
 
-Once the application is running, visit:
-- **Swagger UI**: `http://localhost:5005/docs/`
-- **API Spec**: `http://localhost:5005/swagger.json`
+### 1. 🎯 AI Priority Tagging
 
-## 🔗 API Endpoints
+**Feature Description:**
+Automatically analyzes new tasks to assign intelligent priority levels (Low, Medium, High, Critical) based on task content, context, and user occupation.
 
-### Authentication Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/get/professions` | Get available profession choices |
-| POST | `/api/v1/register` | Register a new user |
-| POST | `/api/v1/login` | Initiate login (get OTP) |
-| POST | `/api/v1/verify-otp` | Verify OTP and complete login |
-| GET | `/api/v1/get/user/{id}` | Get user by ID |
+**Technical Implementation:**
+- **Model**: LLaMA 3.3 70B Versatile via Groq API
+- **Database Field**: `priority` column in Task model
+- **Trigger**: Automatic on task creation via POST `/api/tasks/`
+- **Context-Aware**: Considers user's occupation for professional context
+- **Fallback**: Defaults to 'Medium' priority if AI analysis fails
 
-### Task Management Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/create/task` | Create a new task |
-| GET | `/api/v1/get/tasks` | Get all user tasks (with filtering) |
-| GET | `/api/v1/get/task/{id}` | Get specific task |
-| PUT | `/api/v1/update/task/{id}` | Update task (flexible - can be partial) |
-| PUT | `/api/v1/complete/task/{id}` | Mark task as complete |
-| DELETE | `/api/v1/delete/task/{id}` | Delete task |
-| GET | `/api/v1/get/task/statistics` | Get task statistics |
+**AI Prompt Strategy:**
+```
+You are a smart task prioritization assistant. Analyze this task considering 
+the person's occupation and professional context.
 
-## 📝 Usage Examples
+PRIORITY RULES:
+- Critical: Immediate deadlines, production issues, emergency meetings
+- High: Important work deadlines, key meetings, career-impacting tasks
+- Medium: Regular work tasks, routine meetings, personal important tasks
+- Low: Non-urgent personal tasks, optional activities
+```
 
-### 1. User Registration
+**API Integration:**
+```python
+# Automatic priority assignment
+priority = ai_service.analyze_task_priority(
+    title=task_title,
+    description=task_description,
+    occupation=user_occupation
+)
+```
+
+**Benefits:**
+- Helps users focus on what matters most
+- Reduces cognitive load in task prioritization
+- Adapts to professional context for better accuracy
+- Enables priority-based sorting and filtering
+
+### 2. 🏷️ AI Task Tagging
+
+**Feature Description:**
+Automatically generates up to 3 relevant tags from a predefined list based on task content, making tasks easily searchable and organizable.
+
+**Technical Implementation:**
+- **Model**: LLaMA 3.3 70B Versatile via Groq API
+- **Database**: Many-to-Many relationship between Task and Tag models
+- **Predefined Tags**: [Work, Personal, Health, Finance, Learning, Urgent, Shopping, Travel, Meeting, Project]
+- **Trigger**: Automatic on task creation
+- **JSON Response**: Structured output for reliable parsing
+
+**AI Prompt Strategy:**
+```
+Based on the following task, generate up to 3 relevant one-word tags 
+from this list: [Work, Personal, Health, Finance, Learning, Urgent, 
+Shopping, Travel, Meeting, Project]
+
+Return them as a JSON array of strings. Be selective and choose 
+the most relevant tags.
+```
+
+**API Integration:**
+```python
+# Automatic tag generation
+tags = ai_service.analyze_task_tags(
+    title=task_title,
+    description=task_description
+)
+
+# Create and associate tags with task
+for tag_name in tags:
+    tag = Tag.get_or_create(name=tag_name)
+    task.tags.append(tag)
+```
+
+**Benefits:**
+- Automatic organization without manual effort
+- Consistent tagging across all tasks
+- Enables powerful filtering and search capabilities
+- Reduces time spent on task categorization
+
+### 3. 🔧 AI Service Architecture
+
+**Centralized AI Management:**
+- **AIService Class**: Coordinates all AI features
+- **Graceful Degradation**: Functions continue if AI is disabled
+- **Error Handling**: Robust fallbacks for API failures
+- **Configuration**: Easy enable/disable of AI features
+
+**Performance Optimizations:**
+- **Low Temperature**: Consistent, predictable outputs
+- **Limited Tokens**: Fast responses with focused content
+- **Response Validation**: Ensures output quality and format
+- **Caching Strategy**: Reduces API calls for similar tasks
+
+### 4. 📊 Usage Examples
+
+**Creating a Task with AI Features:**
 ```bash
-curl -X POST http://localhost:5005/api/v1/register \
+curl -X POST "http://localhost:5005/api/v1/tasks" \
   -H "Content-Type: application/json" \
   -d '{
-    "first_name": "John",
-    "last_name": "Doe",
-    "mobile_number": "1234567890",
-    "occupation": "Software Engineer"
+    "title": "Prepare quarterly financial report",
+    "description": "Compile Q4 revenue data and create presentation for board meeting",
+    "deadline": "2024-01-15T09:00:00"
   }'
 ```
 
-### 2. Login Flow
-```bash
-# Step 1: Initiate login
-curl -X POST http://localhost:5005/api/v1/login \
-  -H "Content-Type: application/json" \
-  -d '{"mobile_number": "1234567890"}'
-
-# Step 2: Verify OTP (use 1234 for MVP)
-curl -X POST http://localhost:5005/api/v1/verify-otp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mobile_number": "1234567890",
-    "otp": "1234"
-  }'
+**Response with AI-Generated Fields:**
+```json
+{
+  "id": "uuid",
+  "title": "Prepare quarterly financial report",
+  "description": "Compile Q4 revenue data...",
+  "priority": "High",
+  "tags": ["Work", "Finance", "Meeting"],
+  "deadline": "2024-01-15T09:00:00",
+  "status": "upcoming"
+}
 ```
 
-### 3. Create Task
+**Filtering by AI-Generated Priority:**
 ```bash
-curl -X POST http://localhost:5005/api/v1/create/task \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: c06d410b-4684-435a-a9b6-d89fd70dcf41" \
-  -d '{
-    "title": "Complete project documentation",
-    "description": "Write comprehensive API docs",
-    "deadline": "2024-01-15T18:00:00Z"
-  }'
+curl "http://localhost:5005/api/v1/tasks?priority=High&ordering=-priority"
 ```
 
-### 4. Get Tasks with Filtering
+**Filtering by AI-Generated Tags:**
 ```bash
-# Get all upcoming tasks, sorted by deadline
-curl "http://localhost:5005/api/v1/get/tasks?status=upcoming&sort_by=deadline&sort_order=asc" \
-  -H "X-User-ID: c06d410b-4684-435a-a9b6-d89fd70dcf41"
+curl "http://localhost:5005/api/v1/tasks?tag=Work"
 ```
 
-### 5. Mark Task as Complete
-```bash
-curl -X PUT http://localhost:5005/api/v1/complete/task/257a84b6-d063-4417-9b30-6fc13557ed17 \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: c06d410b-4684-435a-a9b6-d89fd70dcf41"
+### 5. 🎯 Configuration
+
+**Environment Variables:**
+```ini
+# Enable/disable AI features
+AI_ENABLED = true
+
+# Groq API configuration
+GROQ_API_KEY = your_groq_api_key
+GROQ_MODEL = llama-3.3-70b-versatile
+GROQ_BASE_URL = https://api.groq.com/openai/v1
 ```
 
-### 6. Update Task (Flexible - Partial or Complete)
-```bash
-# Update only completion status
-curl -X PUT http://localhost:5005/api/v1/update/task/257a84b6-d063-4417-9b30-6fc13557ed17 \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: c06d410b-4684-435a-a9b6-d89fd70dcf41" \
-  -d '{"completed": true}'
+**AI Feature Toggle:**
+AI features can be completely disabled by setting `AI_ENABLED = false`, ensuring the system remains fully functional with default values.
 
-# Update title and description
-curl -X PUT http://localhost:5005/api/v1/update/task/257a84b6-d063-4417-9b30-6fc13557ed17 \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: c06d410b-4684-435a-a9b6-d89fd70dcf41" \
-  -d '{
-    "title": "Updated task title",
-    "description": "Updated description"
-  }'
+## 📋 Time-Aware Auto-Bucketing
+
+Tasks are automatically categorized into three intelligent buckets:
+
+### 🟡 Upcoming
+- Future deadlines
+- Not yet completed
+- Automatically sorted by deadline proximity
+
+### 🟢 Completed
+- Manually marked as complete by user
+- Preserves completion timestamp
+- Maintains task history
+
+### 🔴 Missed
+- Past deadlines
+- Not completed
+- Automatic transition when deadline passes
+
+## 🛠️ API Endpoints
+
+### Authentication
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/login` - OTP-based login
+- `GET /api/v1/auth/user` - Get current user info
+
+### Task Management
+- `POST /api/v1/tasks` - Create task (with AI features)
+- `GET /api/v1/tasks` - Get tasks with filters
+- `GET /api/v1/tasks/{id}` - Get specific task
+- `PUT /api/v1/tasks/{id}` - Update task
+- `DELETE /api/v1/tasks/{id}` - Delete task
+- `PATCH /api/v1/tasks/{id}/complete` - Mark complete
+- `GET /api/v1/tasks/stats` - Get task statistics
+
+### Query Parameters
+- `status` - Filter by task status
+- `priority` - Filter by AI-generated priority
+- `tag` - Filter by AI-generated tags
+- `ordering` - Sort by deadline, priority, created_at
+
+## 📱 Demo Data
+
+Generate sample data for testing:
+```bash
+python demo_data.py
 ```
 
-## 🔧 Configuration
+Creates:
+- 3 demo users with different professions
+- 10 sample tasks per user with varied AI-generated priorities and tags
+- Mix of upcoming, completed, and missed tasks
 
-### Environment Variables
-- `TASK_MANAGEMENT`: Path to configuration file
-- `DATABASE_URL`: PostgreSQL connection string (optional)
+**Demo Login Credentials:**
+- Alice (Software Engineer): 1234567890
+- Bob (Product Manager): 2345678901
+- Carol (Data Scientist): 3456789012
+- OTP: 1234
 
-### Configuration File Options
-See the sample configuration in the Quick Start section above.
+## 🎨 Streamlit UI Features
 
-## 🧪 Testing
+### Real-time Dashboard
+- **Live Statistics**: Task completion metrics
+- **Auto-refresh**: Configurable refresh intervals
+- **Visual Indicators**: Color-coded priority and status
+- **Responsive Layout**: Mobile-friendly design
 
-The API includes comprehensive error handling and validation. Test with invalid data to see the robust error responses:
+### Task Management
+- **Create Tasks**: Sidebar form with validation
+- **Edit Tasks**: Inline editing capabilities
+- **Complete Tasks**: One-click completion
+- **Delete Tasks**: Confirmation dialogs
 
+### AI Features Showcase
+- **Priority Badges**: Visual priority indicators
+- **Tag Clouds**: Organized tag display
+- **Smart Filtering**: AI-generated metadata filtering
+- **Context Awareness**: Professional occupation consideration
+
+## 🔧 Development
+
+### Running Tests
 ```bash
-# Test validation error
-curl -X POST http://localhost:5005/api/v1/register \
-  -H "Content-Type: application/json" \
-  -d '{"first_name": "John"}'  # Missing required fields
+python -m pytest tests/
 ```
 
-## 🏆 Task Status Auto-Bucketing
+### Code Style
+```bash
+black .
+flake8 .
+```
 
-Tasks are automatically categorized into three buckets:
+### Database Migrations
+```bash
+# Create migration
+flask db migrate -m "Description"
 
-1. **Upcoming**: Deadline in the future, not completed
-2. **Completed**: Manually marked as complete (regardless of deadline)
-3. **Missed**: Deadline has passed, not completed
+# Apply migration
+flask db upgrade
+```
 
-The status is computed dynamically, ensuring real-time accuracy without background jobs.
+## 🚀 Deployment
 
-## 🎨 User Authentication (MVP)
+### Production Checklist
+- [ ] Set secure database credentials
+- [ ] Configure proper GROQ_API_KEY
+- [ ] Enable production logging
+- [ ] Set up SSL/TLS
+- [ ] Configure proper CORS origins
+- [ ] Set up monitoring and alerting
 
-For the MVP version:
-- **Registration**: Simple form with personal details
-- **Login**: Mobile number + OTP verification
-- **OTP**: Default OTP is `1234` (no real SMS integration)
-- **Session**: Simple user ID in headers (X-User-ID)
+### Docker Deployment
+```bash
+# Build image
+docker build -t task-management-api .
 
-## 🔮 Future Enhancements
+# Run container
+docker run -p 5005:5005 -e GROQ_API_KEY=your_key task-management-api
+```
 
-This MVP provides the foundation for advanced features:
-- JWT token authentication
-- Real OTP integration
-- AI-powered task prioritization
-- Task tagging and categorization
-- Sub-task generation
-- Email notifications
-- Mobile app support
+## 📊 Monitoring
 
-## 🛡️ Security Notes
+### Logging Features
+- **Colored Output**: Easy-to-read console logs
+- **Request Tracking**: Unique request IDs
+- **Performance Metrics**: Response time tracking
+- **Error Tracking**: Comprehensive error logging
+- **AI Usage Tracking**: AI feature usage statistics
 
-For production deployment:
-- Replace default OTP with real SMS service
-- Implement proper JWT authentication
-- Add rate limiting
-- Enable HTTPS
-- Add input sanitization
-- Implement proper session management
+### Health Checks
+- `GET /health` - API health status
+- `GET /api/v1/auth/health` - Authentication service health
+- `GET /api/v1/tasks/health` - Task service health
 
-## 🐛 Troubleshooting
+## 🤝 Contributing
 
-### Common Issues
-
-1. **Database Connection Error**
-   - Verify PostgreSQL is running
-   - Check database credentials in config
-   - Ensure database exists
-
-2. **Import Errors**
-   - Run `pip install -r requirements.txt`
-   - Check Python version (3.8+ required)
-
-3. **Port Already in Use**
-   - Change port in main.py or kill existing process
-
-### Logs
-Check application logs for detailed error information:
-- Console output (colored)
-- Log file (if configured)
+1. Fork the repository
+2. Create a feature branch
+3. Implement your changes
+4. Add comprehensive tests
+5. Update documentation
+6. Submit a pull request
 
 ## 📄 License
 
-This project is built for educational and portfolio purposes.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆔 UUID Implementation (Security Enhancement)
+## 🙏 Acknowledgments
 
-**Important Change**: All user and task IDs are now **UUIDs** instead of sequential integers.
-
-### Why UUIDs?
-- ✅ **Prevents ID enumeration attacks** - Users can't guess other user/task IDs
-- ✅ **Better security and privacy** - No predictable patterns
-- ✅ **Scalable across distributed systems** - Globally unique identifiers
-- ✅ **Production-ready** - Industry standard for secure systems
-
-### Technical Details
-- **UUID Version**: v4 (random)
-- **Format**: `123e4567-e89b-12d3-a456-426614174000` 
-- **Database**: PostgreSQL native UUID type (efficient storage)
-- **API**: Serialized as strings in JSON responses
-
-### Migration Impact
-- **Headers**: `X-User-ID` now expects UUID string instead of integer
-- **Path Parameters**: All `/tasks/{id}` and `/users/{id}` endpoints now use UUIDs
-- **Responses**: All `id` fields in JSON responses are now UUID strings
-
-### Updated API Examples
-
-#### Authentication with UUID
-```bash
-# Register user (response will have UUID)
-curl -X POST http://localhost:5005/api/v1/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "first_name": "John",
-    "last_name": "Doe",
-    "mobile_number": "1234567890",
-    "occupation": "Software Engineer"
-  }'
-
-# Response includes UUID
-{
-  "success": true,
-  "user": {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
-    "first_name": "John",
-    "last_name": "Doe",
-    "mobile_number": "1234567890",
-    "occupation": "Software Engineer"
-  }
-}
-```
-
-#### Task Management with UUIDs
-```bash
-# Create task with UUID in header
-curl -X POST http://localhost:5005/api/v1/create/task \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: 123e4567-e89b-12d3-a456-426614174000" \
-  -d '{
-    "title": "Complete project documentation",
-    "description": "Write comprehensive API documentation",
-    "deadline": "2024-12-31T23:59:59"
-  }'
-
-# Get specific task by UUID
-curl -X GET http://localhost:5005/api/v1/get/task/456e7890-e89b-12d3-a456-426614174111 \
-  -H "X-User-ID: 123e4567-e89b-12d3-a456-426614174000"
-
-# Update task by UUID
-curl -X PUT http://localhost:5005/api/v1/update/task/456e7890-e89b-12d3-a456-426614174111 \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: 123e4567-e89b-12d3-a456-426614174000" \
-  -d '{"completed": true}'
-```
-
-#### Task Response Format
-```json
-{
-  "success": true,
-  "task": {
-    "id": "456e7890-e89b-12d3-a456-426614174111",
-    "title": "Complete project documentation",
-    "description": "Write comprehensive API documentation",
-    "deadline": "2024-12-31T23:59:59",
-    "completed": false,
-    "status": "upcoming",
-    "is_past_deadline": false,
-    "user_id": "123e4567-e89b-12d3-a456-426614174000",
-    "created_at": "2024-01-01T00:00:00",
-    "updated_at": "2024-01-01T00:00:00"
-  }
-}
-```
-
-### Backward Compatibility
-- **Breaking Change**: This is a breaking change from integer IDs
-- **Database**: Existing data will be migrated to UUID format
-- **Clients**: All client applications must be updated to handle UUID strings
+- **Groq**: For providing excellent AI API with generous free limits
+- **LLaMA**: For the powerful language model that powers our AI features
+- **Flask**: For the robust web framework
+- **SQLAlchemy**: For excellent ORM capabilities
+- **Streamlit**: For the beautiful UI framework
 
 ---
 
-**Built with ❤️ using Flask, SQLAlchemy, and modern Python practices** 
+**Built with ❤️ using cutting-edge AI technology to make task management smarter and more efficient.** 
