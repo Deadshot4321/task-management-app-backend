@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from Config.database_config import db
 from Exceptions.custom_exception import CustomException
 
@@ -31,6 +32,9 @@ class Task(db.Model):
     # Timestamps
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relationship with tags (Many-to-Many) - import will be resolved at runtime
+    tags = relationship('Tag', secondary='task_tags', back_populates='tasks')
     
     def __init__(self, title, deadline, user_id, description=None, completed=False, priority='Medium'):
         self.title = title
@@ -233,6 +237,7 @@ class Task(db.Model):
             'deadline': self.deadline.isoformat() if self.deadline else None,
             'completed': self.completed,
             'priority': self.priority,
+            'tags': [tag.to_dict() for tag in self.tags] if self.tags else [],
             'status': self.get_status(),
             'is_past_deadline': self.is_past_deadline(),
             'user_id': str(self.user_id),  # Convert UUID to string for JSON serialization
@@ -241,4 +246,5 @@ class Task(db.Model):
         }
     
     def __repr__(self):
-        return f'<Task {self.title} - {self.get_status()} - Priority: {self.priority}>' 
+        tag_names = [tag.name for tag in self.tags] if self.tags else []
+        return f'<Task {self.title} - {self.get_status()} - Priority: {self.priority} - Tags: {tag_names}>' 

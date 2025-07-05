@@ -25,6 +25,20 @@ Respond with EXACTLY ONE WORD: Critical, High, Medium, or Low
 
 Priority:"""
 
+    # Task Tag Generation
+    TAG_PROMPT = """
+Based on the following task, generate up to 3 relevant one-word tags from this list:
+[Work, Personal, Health, Finance, Learning, Urgent, Shopping, Travel, Meeting, Project]
+
+Return them as a JSON array of strings. Choose only from the provided list. Be selective and choose the most relevant tags.
+
+Task: {title}
+Description: {description}
+
+Example response: ["Work", "Meeting", "Urgent"]
+
+Tags:"""
+
 
     @staticmethod
     def get_priority_prompt(title: str, description: str = "",occupation: str = "") -> str:
@@ -32,4 +46,11 @@ Priority:"""
             title=title,
             description=description or "No description provided",
             occupation=occupation
+        )
+    
+    @staticmethod
+    def get_tag_prompt(title: str, description: str = "") -> str:
+        return PromptLibrary.TAG_PROMPT.format(
+            title=title,
+            description=description or "No description provided"
         )

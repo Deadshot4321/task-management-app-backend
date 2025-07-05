@@ -92,6 +92,20 @@ def get_user_id_from_request():
                             'deadline': {'type': 'string', 'format': 'date-time'},
                             'completed': {'type': 'boolean', 'example': False},
                             'priority': {'type': 'string', 'example': 'High', 'enum': ['Low', 'Medium', 'High', 'Critical']},
+                            'tags': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'id': {'type': 'string', 'example': 'uuid'},
+                                        'name': {'type': 'string', 'example': 'Work'},
+                                        'color': {'type': 'string', 'example': '#58a6ff'},
+                                        'created_at': {'type': 'string', 'format': 'date-time'},
+                                        'updated_at': {'type': 'string', 'format': 'date-time'}
+                                    }
+                                },
+                                'example': [{'id': 'uuid', 'name': 'Work', 'color': '#58a6ff'}]
+                            },
                             'status': {'type': 'string', 'example': 'upcoming'},
                             'is_past_deadline': {'type': 'boolean', 'example': False},
                             'user_id': {'type': 'string', 'example': 'uuid'},
@@ -203,6 +217,13 @@ def create_task():
             'enum': ['asc', 'desc'],
             'default': 'asc',
             'description': 'Sort order'
+        },
+        {
+            'name': 'tag',
+            'in': 'query',
+            'type': 'string',
+            'enum': ['Work', 'Personal', 'Health', 'Finance', 'Learning', 'Urgent', 'Shopping', 'Travel', 'Meeting', 'Project'],
+            'description': 'Filter tasks by tag'
         }
     ],
     'responses': {
@@ -223,6 +244,20 @@ def create_task():
                                 'deadline': {'type': 'string', 'format': 'date-time'},
                                 'completed': {'type': 'boolean', 'example': False},
                                 'priority': {'type': 'string', 'example': 'High', 'enum': ['Low', 'Medium', 'High', 'Critical']},
+                                'tags': {
+                                    'type': 'array',
+                                    'items': {
+                                        'type': 'object',
+                                        'properties': {
+                                            'id': {'type': 'string', 'example': 'uuid'},
+                                            'name': {'type': 'string', 'example': 'Work'},
+                                            'color': {'type': 'string', 'example': '#58a6ff'},
+                                            'created_at': {'type': 'string', 'format': 'date-time'},
+                                            'updated_at': {'type': 'string', 'format': 'date-time'}
+                                        }
+                                    },
+                                    'example': [{'id': 'uuid', 'name': 'Work', 'color': '#58a6ff'}]
+                                },
                                 'status': {'type': 'string', 'example': 'upcoming'},
                                 'is_past_deadline': {'type': 'boolean', 'example': False},
                                 'user_id': {'type': 'string', 'example': 'uuid'},
@@ -271,11 +306,12 @@ def get_tasks():
         # Get query parameters
         status = request.args.get('status')
         priority = request.args.get('priority')
+        tag = request.args.get('tag')
         sort_by = request.args.get('sort_by', 'deadline')
         sort_order = request.args.get('sort_order', 'asc')
         
         # Get tasks
-        result = TaskService.get_user_tasks(user_id, status, priority, sort_by, sort_order)
+        result = TaskService.get_user_tasks(user_id, status, priority, tag, sort_by, sort_order)
         
         return jsonify(result), 200
         

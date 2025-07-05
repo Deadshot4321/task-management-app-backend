@@ -45,3 +45,69 @@ class AIService:
         except Exception as e:
             print(f"Error in priority analysis: {e}")
             return 'Medium'  # Safe fallback
+
+    def analyze_task_tags(self, title: str, description: str = "") -> list:
+        """
+        Analyze task content and generate relevant tags using AI
+        Returns: List of tag names (up to 3)
+        """
+        if not self.enabled:
+            return ['Work']  # Default when AI is disabled
+
+        try:
+            import json
+            prompt = self.prompts.get_tag_prompt(title, description)
+            response = self.groq_client.chat_completion(prompt, max_tokens=50, temperature=0.3)
+
+            # Parse JSON response
+            response = response.strip()
+            
+            # Try to extract JSON array from response
+            if '[' in response and ']' in response:
+                # Extract the JSON array part
+                start = response.find('[')
+                end = response.rfind(']') + 1
+                json_str = response[start:end]
+                
+                tags = json.loads(json_str)
+                
+                # Validate tags are strings and from allowed list
+                valid_tags = []
+                allowed_tags = [
+                    'Work', 'Personal', 'Health', 'Finance', 'Learning', 
+                    'Urgent', 'Shopping', 'Travel', 'Meeting', 'Project'
+                ]
+                
+                for tag in tags:
+                    if isinstance(tag, str) and tag in allowed_tags:
+                        valid_tags.append(tag)
+                    elif isinstance(tag, str):
+                        # Try to find close match
+                        tag_lower = tag.lower()
+                        for allowed_tag in allowed_tags:
+                            if tag_lower == allowed_tag.lower():
+                                valid_tags.append(allowed_tag)
+                                break
+                
+                # Limit to 3 tags
+                return valid_tags[:3] if valid_tags else ['Work']
+            
+            # Fallback parsing for non-JSON responses
+            response_lower = response.lower()
+            fallback_tags = []
+            allowed_tags = [
+                'Work', 'Personal', 'Health', 'Finance', 'Learning', 
+                'Urgent', 'Shopping', 'Travel', 'Meeting', 'Project'
+            ]
+            
+            for tag in allowed_tags:
+                if tag.lower() in response_lower:
+                    fallback_tags.append(tag)
+                if len(fallback_tags) >= 3:
+                    break
+            
+            return fallback_tags if fallback_tags else ['Work']
+
+        except Exception as e:
+            print(f"Error in tag analysis: {e}")
+            return ['Work']  # Safe fallback

@@ -107,6 +107,33 @@ st.markdown("""
         gap: 0.5rem;
     }
     
+    .task-actions {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .action-button {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid #30363d;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .action-button:hover {
+        background: #58a6ff;
+        border-color: #58a6ff;
+        color: white;
+    }
+    
     .priority-badge {
         display: inline-block;
         padding: 0.25rem 0.75rem;
@@ -141,6 +168,29 @@ st.markdown("""
         background: linear-gradient(135deg, rgba(63, 185, 80, 0.2), rgba(63, 185, 80, 0.1));
         color: #3fb950;
         border-color: #3fb950;
+    }
+    
+    .task-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .tag-badge {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border-radius: 16px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: capitalize;
+        letter-spacing: 0.3px;
+        border: 1px solid;
+        color: #ffffff;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        background: linear-gradient(135deg, currentColor, rgba(255,255,255,0.1));
+        backdrop-filter: blur(4px);
     }
     
     .sort-controls {
@@ -213,12 +263,22 @@ st.markdown("""
         font-weight: 600;
         padding: 0.75rem 1.5rem;
         transition: all 0.3s ease;
+        width: 100%;
     }
     
     .stButton > button:hover {
         background: linear-gradient(135deg, #316dca, #1f4788);
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+    }
+    
+    .stButton.delete-button > button {
+        background: linear-gradient(135deg, #f85149, #d9363e);
+    }
+    
+    .stButton.delete-button > button:hover {
+        background: linear-gradient(135deg, #d9363e, #b02a2f);
+        box-shadow: 0 4px 12px rgba(248, 81, 73, 0.3);
     }
     
     .stSelectbox > div > div {
@@ -365,7 +425,7 @@ def create_task(title, description, deadline):
                               "deadline": deadline
                           })
 
-def get_tasks(status=None, priority=None, sort_by='deadline', sort_order='asc'):
+def get_tasks(status=None, priority=None, tag=None, sort_by='deadline', sort_order='asc'):
     """Get user tasks with optional filters and sorting"""
     endpoint = "/get/tasks"
     params = []
@@ -374,6 +434,8 @@ def get_tasks(status=None, priority=None, sort_by='deadline', sort_order='asc'):
         params.append(f"status={status}")
     if priority:
         params.append(f"priority={priority}")
+    if tag:
+        params.append(f"tag={tag}")
     if sort_by:
         params.append(f"sort_by={sort_by}")
     if sort_order:
@@ -493,6 +555,7 @@ def show_otp_verification():
                 if result["success"]:
                     st.session_state.user_id = result["user"]["id"]
                     st.session_state.user_name = f"{result['user']['first_name']} {result['user']['last_name']}"
+                    st.session_state.user_first_name = result["user"]["first_name"]
                     st.session_state.otp_verification = False
                     st.success(f"🎉 Welcome back, {st.session_state.user_name}!")
                     time.sleep(1)
@@ -566,262 +629,176 @@ def show_registration_form():
 
 # Main Task Management UI
 def show_task_manager():
-    """Show enhanced task management interface"""
-    # Header with user info and logout
-    col1, col2, col3 = st.columns([3, 1, 1])
-    
-    with col1:
-        st.markdown('<h1 class="main-header">📋 Task Manager</h1>', unsafe_allow_html=True)
-        if 'user_name' in st.session_state:
-            st.markdown(f"<p style='color: #79c0ff; font-size: 1.1rem;'>Welcome back, <strong>{st.session_state.user_name}</strong>! 👋</p>", unsafe_allow_html=True)
-    
-    with col3:
-        if st.button("🚪 Logout", use_container_width=True):
-            # Clear session state
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.rerun()
-    
-    # Sidebar for creating new tasks
+    """Display the main task manager interface"""
+    st.markdown('<p class="main-header">📋 Your Personal Task Manager</p>', unsafe_allow_html=True)
+
+    # Sidebar for creating tasks and filters
     with st.sidebar:
-        st.markdown("### ➕ Create New Task")
-        
-        with st.form("new_task_form"):
-            title = st.text_input("📝 Task Title", 
-                                placeholder="Enter a descriptive title...",
-                                max_chars=500)
-            
-            description = st.text_area("📄 Description", 
-                                     placeholder="Add details about your task (optional)",
-                                     height=100)
-            
-            # Separate date and time inputs
-            col1, col2 = st.columns(2)
-            with col1:
-                deadline_date = st.date_input("📅 Deadline Date", 
-                                            value=(datetime.now() + timedelta(days=1)).date(),
-                                            min_value=datetime.now().date())
-            with col2:
-                deadline_time = st.time_input("⏰ Time", 
-                                            value=datetime.now().replace(hour=23, minute=59).time())
-            
-            submitted = st.form_submit_button("🚀 Create Task", use_container_width=True)
-            
-            if submitted:
-                if title:
-                    # Combine date and time (handle Streamlit's DateWidgetReturn)
-                    if isinstance(deadline_date, tuple):
-                        deadline_date = deadline_date[0] if deadline_date else (datetime.now() + timedelta(days=1)).date()
-                    
-                    # Ensure deadline_date is not None
-                    if deadline_date is None:
-                        deadline_date = (datetime.now() + timedelta(days=1)).date()
-                    
-                    deadline = datetime.combine(deadline_date, deadline_time)
-                    
-                    with st.spinner("Creating task..."):
-                        result = create_task(title, description, deadline.isoformat())
-                    
-                    if result["success"]:
-                        st.success("✅ Task created successfully!")
-                        time.sleep(1)
-                        st.rerun()
+        st.markdown("## ⚡️ Quick Actions")
+
+        # User Info
+        with st.container():
+            st.markdown(f"**Welcome, {st.session_state.get('user_first_name', 'User')}!**")
+            if st.button("Logout", use_container_width=True):
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                st.rerun()
+
+        st.markdown("---")
+
+        # Create Task Form
+        with st.expander("📝 Create New Task", expanded=True):
+            with st.form("new_task_form", clear_on_submit=True):
+                st.markdown("##### Add a new item to your list")
+                title = st.text_input("Title", placeholder="e.g., Finish project report")
+                description = st.text_area("Description", placeholder="Add more details here...")
+                
+                d_col, t_col = st.columns(2)
+                deadline_date = d_col.date_input("Deadline Date", min_value=datetime.now().date())
+                deadline_time = t_col.time_input("Deadline Time")
+                
+                submitted = st.form_submit_button("🚀 Add Task", use_container_width=True)
+                
+                if submitted:
+                    if title:
+                        # Handle Streamlit's DateWidgetReturn
+                        if isinstance(deadline_date, tuple):
+                            deadline_date = deadline_date[0] if deadline_date else datetime.now().date()
+                        
+                        # Ensure deadline_date is not None
+                        if deadline_date is None:
+                            deadline_date = datetime.now().date()
+                            
+                        deadline = datetime.combine(deadline_date, deadline_time)
+                        with st.spinner("Creating task..."):
+                            result = create_task(title, description, deadline.isoformat())
+                        
+                        if result["success"]:
+                            st.success("🎉 Task created successfully!")
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Error: {result.get('error', 'Unknown error')}")
                     else:
-                        st.error(f"❌ {result['error']}")
-                else:
-                    st.error("❌ Please enter a task title")
+                        st.warning("Title is required to create a task.")
         
         st.markdown("---")
         
-        # Statistics
-        st.markdown("### 📊 Your Statistics")
-        stats = get_statistics()
-        
-        if stats:
-            st.markdown(f"""
-            <div class="stats-card">
-                <div class="stat-number">{stats.get('total_tasks', 0)}</div>
-                <div class="stat-label">Total Tasks</div>
-            </div>
-            """, unsafe_allow_html=True)
+        # Filtering and Sorting
+        st.markdown("## ⚙️ Controls")
+        with st.expander("Filter & Sort Tasks", expanded=True):
+            st.session_state.sort_by = st.selectbox(
+                "Sort by",
+                ['deadline', 'priority', 'title'],
+                index=0,
+                key='sort_by_select'
+            )
+            st.session_state.sort_order = st.selectbox(
+                "Order",
+                ['asc', 'desc'],
+                index=0,
+                key='sort_order_select'
+            )
             
-            st.markdown(f"""
-            <div class="stats-card">
-                <div class="stat-number">{stats.get('completion_rate', 0)}%</div>
-                <div class="stat-label">Completion Rate</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
+            # Fetch all tags for filtering
+            all_tags = ["All"] # Assuming a function get_all_tags() exists or is added
+            st.session_state.filter_tag = st.selectbox(
+                "Filter by Tag",
+                options=all_tags,
+                index=0,
+                key='filter_tag_select'
+            )
+
+    # Main content area
+    
+    # Statistics
+    stats = get_statistics()
+    if stats:
+        s_col1, s_col2, s_col3 = st.columns(3)
+        with s_col1:
             st.markdown(f"""
             <div class="stats-card">
                 <div class="stat-number">{stats.get('upcoming_tasks', 0)}</div>
-                <div class="stat-label">Upcoming Tasks</div>
+                <div class="stat-label">Upcoming</div>
             </div>
             """, unsafe_allow_html=True)
-        else:
-            st.info("📊 Statistics will appear after creating tasks")
-        
-        # Auto-refresh toggle
-        st.markdown("---")
-        auto_refresh = st.checkbox("🔄 Auto-refresh (30s)", value=False)
-        
-        if auto_refresh:
-            time.sleep(30)
-            st.rerun()
-    
-    # Main content area - Task Buckets
-    st.markdown("### 🎯 Task Dashboard")
-    
-    # Sorting and Filtering Controls
-    st.markdown('<div class="sort-controls">', unsafe_allow_html=True)
-    st.markdown("#### 🔧 Sort & Filter Options")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        sort_by = st.selectbox(
-            "📊 Sort by",
-            options=["deadline", "priority", "created_at", "title"],
-            index=0,
-            format_func=lambda x: {
-                "deadline": "📅 Deadline",
-                "priority": "🎯 Priority",
-                "created_at": "📝 Created Date",
-                "title": "🔤 Title"
-            }[x]
+        with s_col2:
+            st.markdown(f"""
+            <div class="stats-card">
+                <div class="stat-number">{stats.get('completed_tasks', 0)}</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with s_col3:
+            st.markdown(f"""
+            <div class="stats-card">
+                <div class="stat-number">{stats.get('missed_tasks', 0)}</div>
+                <div class="stat-label">Missed</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+    st.markdown('<div class="sub-header">Your Tasks</div>', unsafe_allow_html=True)
+
+    # Fetch tasks based on filters
+    try:
+        tasks = get_tasks(
+            sort_by=st.session_state.get('sort_by', 'deadline'),
+            sort_order=st.session_state.get('sort_order', 'asc'),
+            tag=st.session_state.get('filter_tag') if st.session_state.get('filter_tag') != 'All' else None
         )
-    
-    with col2:
-        sort_order = st.selectbox(
-            "📈 Sort order",
-            options=["asc", "desc"],
-            index=0,
-            format_func=lambda x: {
-                "asc": "⬆️ Ascending",
-                "desc": "⬇️ Descending"
-            }[x]
-        )
-    
-    with col3:
-        filter_priority = st.selectbox(
-            "🎯 Filter by Priority",
-            options=[None, "Critical", "High", "Medium", "Low"],
-            index=0,
-            format_func=lambda x: "🔍 All Priorities" if x is None else {
-                "Critical": "🔴 Critical",
-                "High": "🟠 High", 
-                "Medium": "🟡 Medium",
-                "Low": "🟢 Low"
-            }[x]
-        )
-    
-    with col4:
-        filter_status = st.selectbox(
-            "📋 Filter by Status",
-            options=[None, "upcoming", "completed", "missed"],
-            index=0,
-            format_func=lambda x: "📝 All Status" if x is None else {
-                "upcoming": "🟡 Upcoming",
-                "completed": "🟢 Completed",
-                "missed": "🔴 Missed"
-            }[x]
-        )
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Get all tasks with filters and sorting
-    with st.spinner("Loading tasks..."):
-        all_tasks = get_tasks(
-            status=filter_status,
-            priority=filter_priority,
-            sort_by=sort_by or "deadline",
-            sort_order=sort_order or "asc"
-        )
-    
-    if not all_tasks:
-        st.markdown("""
-        <div class="info-box">
-            <h3>🎉 Welcome to Your Task Manager!</h3>
-            <p>You don't have any tasks yet. Get started by creating your first task using the sidebar form.</p>
-            <p><strong>💡 Tips:</strong></p>
-            <ul>
-                <li>Tasks are automatically organized into buckets</li>
-                <li>🟡 <strong>Upcoming</strong>: Future deadlines, not completed</li>
-                <li>🟢 <strong>Completed</strong>: Tasks you've finished</li>
-                <li>🔴 <strong>Missed</strong>: Past deadlines, not completed</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+    except Exception as e:
+        st.error(f"Failed to load tasks: {e}")
+        tasks = []
+
+    if not tasks:
+        st.info("You have no tasks. Add one from the sidebar!")
         return
-    
-    # Get task counts for all statuses (for metrics)
-    total_upcoming = len([t for t in all_tasks if t['status'] == 'upcoming'])
-    total_completed = len([t for t in all_tasks if t['status'] == 'completed'])
-    total_missed = len([t for t in all_tasks if t['status'] == 'missed'])
-    
-    # Statistics row
-    col1, col2, col3, col4 = st.columns(4)
+
+    # Categorize tasks
+    now = datetime.now()
+    upcoming_tasks = []
+    completed_tasks = []
+    missed_tasks = []
+
+    for task in tasks:
+        if task.get('status') == 'completed':
+            completed_tasks.append(task)
+        else:
+            try:
+                deadline = datetime.fromisoformat(task['deadline'].replace('Z', ''))
+                if deadline < now:
+                    missed_tasks.append(task)
+                else:
+                    upcoming_tasks.append(task)
+            except (ValueError, TypeError):
+                upcoming_tasks.append(task) # Fallback for misformatted deadline
+
+    # Display task buckets
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("📝 Total Tasks", len(all_tasks))
-    with col2:
-        st.metric("🟡 Upcoming", total_upcoming)
-    with col3:
-        st.metric("🟢 Completed", total_completed)
-    with col4:
-        st.metric("🔴 Missed", total_missed)
-    
-    st.markdown("---")
-    
-    # Check if status filter is applied
-    if filter_status:
-        # Show filtered tasks in a single view
-        st.markdown(f'<div class="bucket-header upcoming-bucket">📋 Filtered Tasks ({filter_status.title()})</div>', unsafe_allow_html=True)
-        
-        if all_tasks:
-            for task in all_tasks:
-                render_task_card(task, task['status'])
+        st.markdown('<div class="bucket-header upcoming-bucket">🟡 Upcoming</div>', unsafe_allow_html=True)
+        if upcoming_tasks:
+            for task in upcoming_tasks:
+                render_task_card(task, "upcoming")
         else:
-            st.info(f"No {filter_status} tasks found with current filters")
-    else:
-        # Show traditional three-column bucket view
-        # Separate tasks by status
-        upcoming_tasks = [t for t in all_tasks if t['status'] == 'upcoming']
-        completed_tasks = [t for t in all_tasks if t['status'] == 'completed']
-        missed_tasks = [t for t in all_tasks if t['status'] == 'missed']
-        
-        # Task Buckets
-        col1, col2, col3 = st.columns(3)
-        
-        # Upcoming Tasks
-        with col1:
-            st.markdown('<div class="bucket-header upcoming-bucket">🟡 Upcoming Tasks</div>', unsafe_allow_html=True)
+            st.info("No upcoming tasks! 🎉")
+    
+    with col2:
+        st.markdown('<div class="bucket-header completed-bucket">🟢 Completed</div>', unsafe_allow_html=True)
+        if completed_tasks:
+            for task in completed_tasks:
+                render_task_card(task, "completed")
+        else:
+            st.info("No tasks completed yet.")
             
-            if upcoming_tasks:
-                for task in upcoming_tasks:
-                    render_task_card(task, "upcoming")
-            else:
-                st.info("No upcoming tasks! 🎉")
-        
-        # Completed Tasks
-        with col2:
-            st.markdown('<div class="bucket-header completed-bucket">🟢 Completed Tasks</div>', unsafe_allow_html=True)
-            
-            if completed_tasks:
-                for task in completed_tasks:
-                    render_task_card(task, "completed")
-            else:
-                st.info("No completed tasks yet")
-        
-        # Missed Tasks
-        with col3:
-            st.markdown('<div class="bucket-header missed-bucket">🔴 Missed Tasks</div>', unsafe_allow_html=True)
-            
-            if missed_tasks:
-                for task in missed_tasks:
-                    render_task_card(task, "missed")
-            else:
-                st.info("No missed tasks! 🎉")
+    with col3:
+        st.markdown('<div class="bucket-header missed-bucket">🔴 Missed</div>', unsafe_allow_html=True)
+        if missed_tasks:
+            for task in missed_tasks:
+                render_task_card(task, "missed")
+        else:
+            st.info("No missed tasks! Great job! 🎉")
 
 def render_task_card(task, status):
     """Render enhanced task card with AI priority"""
@@ -840,129 +817,133 @@ def render_task_card(task, status):
     try:
         deadline_dt = datetime.fromisoformat(task['deadline'].replace('Z', '+00:00'))
         deadline_str = deadline_dt.strftime("%b %d, %Y at %I:%M %p")
-        days_diff = (deadline_dt - datetime.now()).days
+        days_diff = (deadline_dt - datetime.now(deadline_dt.tzinfo)).days
         
-        if days_diff > 0:
-            deadline_info = f"📅 {deadline_str} (in {days_diff} days)"
+        if deadline_dt.date() > datetime.now(deadline_dt.tzinfo).date():
+            deadline_info = f"📅 {deadline_str} ({days_diff} days left)"
             deadline_color = "#3fb950"
-        elif days_diff == 0:
-            deadline_info = f"📅 {deadline_str} (today!)"
+        elif deadline_dt.date() == datetime.now(deadline_dt.tzinfo).date():
+            deadline_info = f"📅 {deadline_str} (Due Today!)"
             deadline_color = "#f7cc02"
         else:
             deadline_info = f"📅 {deadline_str} ({abs(days_diff)} days overdue)"
             deadline_color = "#f85149"
-    except:
+    except Exception as e:
         deadline_info = f"📅 {task['deadline']}"
         deadline_color = "#a5a5a5"
+        st.error(f"Error parsing deadline: {e}")
     
-    # Task card HTML with priority badge
-    card_html = f"""
-    <div class="task-card">
-        <div class="priority-badge {priority_class}">{priority_icon} {priority} Priority</div>
-        <div class="task-title">{task['title']}</div>
-        <div class="task-description">{task.get('description', 'No description provided')}</div>
-        <div class="task-deadline" style="color: {deadline_color};">{deadline_info}</div>
-    </div>
-    """
+    # Get tags and format them
+    tags = task.get('tags', [])
+    tag_html = ""
+    if tags:
+        tag_badges = []
+        for tag in tags:
+            tag_name = tag.get('name', '') if isinstance(tag, dict) else str(tag)
+            tag_color = tag.get('color', '#58a6ff') if isinstance(tag, dict) else '#58a6ff'
+            tag_badges.append(f'<span class="tag-badge" style="background-color: {tag_color}; border-color: {tag_color}; color: #fff;">🏷️ {tag_name}</span>')
+        tag_html = f'<div class="task-tags">{"".join(tag_badges)}</div>'
     
-    st.markdown(card_html, unsafe_allow_html=True)
-    
-    # Action buttons
-    col1, col2, col3 = st.columns(3)
-    
-    # Complete button (only for non-completed tasks)
-    if status != "completed":
-        with col1:
-            if st.button("✅ Complete", key=f"complete_{task['id']}", use_container_width=True):
-                with st.spinner("Marking as complete..."):
-                    result = complete_task(task['id'])
-                
-                if result["success"]:
-                    st.success("✅ Task completed!")
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error(f"❌ {result['error']}")
-    
-    # Edit button
-    with col2:
-        if st.button("✏️ Edit", key=f"edit_{task['id']}", use_container_width=True):
-            st.session_state[f"editing_{task['id']}"] = True
-            st.rerun()
-    
-    # Delete button
-    with col3:
-        if st.button("🗑️ Delete", key=f"delete_{task['id']}", use_container_width=True):
-            if st.session_state.get(f"confirm_delete_{task['id']}", False):
-                with st.spinner("Deleting task..."):
-                    result = delete_task(task['id'])
-                
-                if result["success"]:
-                    st.success("🗑️ Task deleted!")
-                    if f"confirm_delete_{task['id']}" in st.session_state:
-                        del st.session_state[f"confirm_delete_{task['id']}"]
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error(f"❌ {result['error']}")
-            else:
-                st.session_state[f"confirm_delete_{task['id']}"] = True
+    # Task card container
+    with st.container():
+        st.markdown(f"""
+        <div class="task-card">
+            <div style="position: relative;">
+                <div class="priority-badge {priority_class}">{priority_icon} {priority} Priority</div>
+                <div class="task-title">{task['title']}</div>
+                <div class="task-description">{task.get('description', 'No description provided')}</div>
+                {tag_html}
+                <div class="task-deadline" style="color: {deadline_color};">{deadline_info}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Action buttons
+        cols = st.columns([1, 1, 1, 3])
+        
+        with cols[0]:
+            if status != "completed":
+                if st.button("✅", key=f"complete_{task['id']}", help="Mark as Complete"):
+                    with st.spinner("Marking as complete..."):
+                        result = complete_task(task['id'])
+                    if result["success"]:
+                        st.toast("✅ Task completed!", icon="🎉")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {result['error']}")
+
+        with cols[1]:
+            if st.button("✏️", key=f"edit_{task['id']}", help="Edit Task"):
+                st.session_state[f"editing_{task['id']}"] = not st.session_state.get(f"editing_{task['id']}", False)
                 st.rerun()
-    
-    # Show confirmation for delete
-    if st.session_state.get(f"confirm_delete_{task['id']}", False):
-        st.warning("⚠️ Click Delete again to confirm removal")
-    
+
+        with cols[2]:
+            if st.button("🗑️", key=f"delete_{task['id']}", help="Delete Task"):
+                if st.session_state.get(f"confirm_delete_{task['id']}", False):
+                    with st.spinner("Deleting task..."):
+                        result = delete_task(task['id'])
+                    if result["success"]:
+                        st.toast("🗑️ Task deleted!", icon="🗑️")
+                        del st.session_state[f"confirm_delete_{task['id']}"]
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {result['error']}")
+                else:
+                    st.session_state[f"confirm_delete_{task['id']}"] = True
+                    st.rerun()
+
+        # Show confirmation for delete
+        if st.session_state.get(f"confirm_delete_{task['id']}", False):
+            st.warning("⚠️ Click Delete again to confirm removal")
+            
     # Edit form
     if st.session_state.get(f"editing_{task['id']}", False):
-        with st.expander("✏️ Edit Task", expanded=True):
-            with st.form(f"edit_form_{task['id']}"):
-                new_title = st.text_input("Title", value=task['title'])
-                new_description = st.text_area("Description", value=task.get('description', ''))
+        with st.form(f"edit_form_{task['id']}", clear_on_submit=True):
+            st.markdown("##### ✏️ Edit Task")
+            new_title = st.text_input("Title", value=task['title'], label_visibility="collapsed", placeholder="Title")
+            new_description = st.text_area("Description", value=task.get('description', ''), label_visibility="collapsed", placeholder="Description")
+            
+            try:
+                current_deadline = datetime.fromisoformat(task['deadline'].replace('Z', '+00:00'))
+            except:
+                current_deadline = datetime.now()
+            
+            d_col, t_col = st.columns(2)
+            new_deadline_date = d_col.date_input("Deadline Date", value=current_deadline.date(), label_visibility="collapsed")
+            new_deadline_time = t_col.time_input("Deadline Time", value=current_deadline.time(), label_visibility="collapsed")
+            
+            s_col, c_col = st.columns(2)
+            if s_col.form_submit_button("💾 Save Changes", use_container_width=True):
                 
-                try:
-                    current_deadline = datetime.fromisoformat(task['deadline'].replace('Z', '+00:00'))
-                except:
-                    current_deadline = datetime.now()
+                # Handle Streamlit's DateWidgetReturn
+                if isinstance(new_deadline_date, tuple):
+                    new_deadline_date = new_deadline_date[0] if new_deadline_date else current_deadline.date()
                 
-                col1, col2 = st.columns(2)
-                with col1:
-                    new_deadline_date = st.date_input("Deadline Date", value=current_deadline.date())
-                with col2:
-                    new_deadline_time = st.time_input("Deadline Time", value=current_deadline.time())
+                # Ensure new_deadline_date is not None
+                if new_deadline_date is None:
+                    new_deadline_date = current_deadline.date()
+
+                new_deadline = datetime.combine(new_deadline_date, new_deadline_time)
                 
-                col1, col2 = st.columns(2)
+                with st.spinner("Updating task..."):
+                    result = update_task(task['id'], 
+                                       title=new_title, 
+                                       description=new_description,
+                                       deadline=new_deadline.isoformat())
                 
-                with col1:
-                    if st.form_submit_button("💾 Save Changes"):
-                        # Handle Streamlit's DateWidgetReturn
-                        if isinstance(new_deadline_date, tuple):
-                            new_deadline_date = new_deadline_date[0] if new_deadline_date else current_deadline.date()
-                        
-                        # Ensure new_deadline_date is not None
-                        if new_deadline_date is None:
-                            new_deadline_date = current_deadline.date()
-                        
-                        new_deadline = datetime.combine(new_deadline_date, new_deadline_time)
-                        
-                        with st.spinner("Updating task..."):
-                            result = update_task(task['id'], 
-                                               title=new_title, 
-                                               description=new_description,
-                                               deadline=new_deadline.isoformat())
-                        
-                        if result["success"]:
-                            st.success("✅ Task updated!")
-                            del st.session_state[f"editing_{task['id']}"]
-                            time.sleep(1)
-                            st.rerun()
-                        else:
-                            st.error(f"❌ {result['error']}")
-                
-                with col2:
-                    if st.form_submit_button("❌ Cancel"):
-                        del st.session_state[f"editing_{task['id']}"]
-                        st.rerun()
+                if result["success"]:
+                    st.toast("✅ Task updated!", icon="👍")
+                    st.session_state[f"editing_{task['id']}"] = False
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error(f"❌ {result['error']}")
+            
+            if c_col.form_submit_button("❌ Cancel", use_container_width=True):
+                st.session_state[f"editing_{task['id']}"] = False
+                st.rerun()
 
 # Main App
 def main():
