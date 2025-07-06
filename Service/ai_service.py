@@ -7,7 +7,13 @@ class AIService:
     """Main AI service that coordinates all AI features"""
 
     def __init__(self):
-        self.enabled = current_app.config.get('AI_ENABLED', 'false').lower() == 'true'
+        ai_enabled = current_app.config.get('AI_ENABLED', False)
+        # Handle both boolean and string values
+        if isinstance(ai_enabled, bool):
+            self.enabled = ai_enabled
+        else:
+            self.enabled = str(ai_enabled).lower() == 'true'
+        
         if self.enabled:
             try:
                 self.groq_client = GroqClient()
