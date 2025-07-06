@@ -304,7 +304,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # API Configuration
-API_BASE_URL = "http://localhost:5005/api/v1"
+API_BASE_URL = "https://task-management-app-backend-pl2f.onrender.com/api/v1"
 
 # Helper functions
 def make_api_request(method, endpoint, headers=None, json_data=None):
@@ -325,7 +325,7 @@ def make_api_request(method, endpoint, headers=None, json_data=None):
                 error_msg = response.text
             return {"success": False, "error": error_msg}
     except requests.exceptions.ConnectionError:
-        return {"success": False, "error": "🔌 Cannot connect to backend API. Please ensure the Flask server is running on localhost:5005"}
+        return {"success": False, "error": "🔌 Cannot connect to backend API. Please check your internet connection and ensure the deployed API is accessible."}
     except requests.exceptions.Timeout:
         return {"success": False, "error": "⏱️ Request timeout. Please try again."}
     except Exception as e:
