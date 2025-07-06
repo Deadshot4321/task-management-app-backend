@@ -661,24 +661,34 @@ def show_task_manager():
                 
                 if submitted:
                     if title:
-                        # Handle Streamlit's DateWidgetReturn
-                        if isinstance(deadline_date, tuple):
-                            deadline_date = deadline_date[0] if deadline_date else datetime.now().date()
-                        
-                        # Ensure deadline_date is not None
-                        if deadline_date is None:
-                            deadline_date = datetime.now().date()
+                        # Prevent duplicate submissions
+                        if f"creating_task_{title}" not in st.session_state:
+                            st.session_state[f"creating_task_{title}"] = True
                             
-                        deadline = datetime.combine(deadline_date, deadline_time)
-                        with st.spinner("Creating task..."):
-                            result = create_task(title, description, deadline.isoformat())
-                        
-                        if result["success"]:
-                            st.success("🎉 Task created successfully!")
-                            time.sleep(1)
-                            st.rerun()
+                            # Handle Streamlit's DateWidgetReturn
+                            if isinstance(deadline_date, tuple):
+                                deadline_date = deadline_date[0] if deadline_date else datetime.now().date()
+                            
+                            # Ensure deadline_date is not None
+                            if deadline_date is None:
+                                deadline_date = datetime.now().date()
+                                
+                            deadline = datetime.combine(deadline_date, deadline_time)
+                            with st.spinner("Creating task..."):
+                                result = create_task(title, description, deadline.isoformat())
+                            
+                            if result["success"]:
+                                st.success("🎉 Task created successfully!")
+                                # Clear the creation flag after successful creation
+                                del st.session_state[f"creating_task_{title}"]
+                                # Don't force rerun - let the form clear naturally
+                                # The task list will refresh on next interaction
+                            else:
+                                st.error(f"❌ Error: {result.get('error', 'Unknown error')}")
+                                # Clear the creation flag on error too
+                                del st.session_state[f"creating_task_{title}"]
                         else:
-                            st.error(f"❌ Error: {result.get('error', 'Unknown error')}")
+                            st.info("Task creation in progress...")
                     else:
                         st.warning("Title is required to create a task.")
         
@@ -739,6 +749,12 @@ def show_task_manager():
             
     st.markdown('<div class="sub-header">Your Tasks</div>', unsafe_allow_html=True)
 
+    # Add a refresh button to manually refresh tasks
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("🔄 Refresh Tasks", use_container_width=True):
+            st.rerun()
+    
     # Fetch tasks based on filters
     try:
         tasks = get_tasks(
